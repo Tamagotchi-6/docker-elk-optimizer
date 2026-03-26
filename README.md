@@ -129,28 +129,29 @@ Stage 2 (runtime): python:3.12-slim (새 이미지, 깨끗함)
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    Multi-Stage Build (FastAPI)                      │
 │                                                                     │
-│  ┌─────────────────────┐         ┌─────────────────────────────┐   │
-│  │  STAGE 1: deps      │         │  STAGE 2: runtime           │   │
-│  │  python:3.12-slim   │──/inst──▶│  python:3.12-slim          │   │
+│  ┌─────────────────────┐         ┌─────────────────────────────┐    │
+│  │  STAGE 1: deps      │         │  STAGE 2: runtime           │    │
+│  │  python:3.12-slim   │──/inst──▶│  python:3.12-slim         │    │
 │  │  pip install →      │  only   │  (빌드 도구 없음)            │   │
-│  │  /install           │         │  USER nonroot               │   │
-│  │  gcc, pip 포함      │         │  → 145MB, CVE 2건           │   │
-│  └─────────────────────┘         └─────────────────────────────┘   │
+│  │  /install           │         │  USER nonroot               │    │
+│  │  gcc, pip 포함      │         │  → 145MB, CVE 2건           │    │
+│  └─────────────────────┘         └─────────────────────────────┘    │
+│  버려짐 (최종 이미지에 포함 안 됨)    ↑ 실제 배포되는 이미지         │
 └─────────────────────────────────────────────────────────────────────┘
 
                         docker-compose 전체 스택
 ┌────────────────────────────────────────────────────────────────────┐
 │                                                                    │
-│  클라이언트                                                         │
+│  클라이언트                                                        │
 │      │ :8000                                                       │
 │      ▼                                                             │
 │  [ FastAPI 컨테이너 ] ── 검색 쿼리 ──▶ [ Elasticsearch :9200 ]    │
 │    직접 빌드 (145MB)                     Elastic사 이미지 (1.3GB)  │
-│    멀티 스테이지 적용                     JVM 튜닝으로 최적화        │
+│    멀티 스테이지 적용                     JVM 튜닝으로 최적화       │
 │                                                │                   │
 │  [ Kibana :5601 ] ◀────────────────── [ esdata 볼륨 ]             │
 │    Elastic사 이미지 (800MB)              데이터 영속성              │
-│    브라우저로 시각화                                                 │
+│    브라우저로 시각화                                                │
 │                                                                    │
 └────────────────────────────────────────────────────────────────────┘
 ```
@@ -184,55 +185,84 @@ Stage 2 (runtime): python:3.12-slim (새 이미지, 깨끗함)
 
 ---
 
-## 🚀 빠른 시작
+## 🚀 이미지 받아오기 (docker hub & github 버전)
 
 ### 사전 요구 사항
-
+ 
 ```bash
 docker --version          # Docker Engine 24.0+
 docker compose version    # Docker Compose V2
 ```
-
-### 최초 실행 (처음 한 번만)
-
+ 
+### 최초 실행 (처음 한 번만 — OS 공통)
+ 
 ```bash
 # ES가 요구하는 Linux 커널 설정 — 컨테이너 밖 호스트 OS에서 실행
 sudo sysctl -w vm.max_map_count=262144
-
-# 영구 적용 (재부팅 후에도 유지)
 echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
-
-# macOS (Docker Desktop) 사용 시
-# Docker Desktop → Settings → Resources → Advanced → vm.max_map_count 설정
+ 
+# macOS (Docker Desktop)
+# Docker Desktop → Settings → Resources → Advanced → vm.max_map_count = 262144
 ```
-
-### Clone & Run
-
+ 
+---
+ 
+### 방법 A — Docker Hub (빌드 없이 바로 실행) ⭐ 권장
+ 
+FastAPI 이미지를 Docker Hub에서 직접 받아서 실행합니다. git clone, 빌드 과정이 없습니다.
+ 
+```bash
+# 1. compose 파일 하나만 받기 (팀원에게 직접 전달하거나 아래 내용 복사)
+curl -O https://raw.githubusercontent.com/username/docker-optimized-production/main/docker-compose.hub.yml
+ 
+# 2. 전체 스택 실행 (FastAPI는 Docker Hub에서 자동으로 pull)
+docker compose -f docker-compose.hub.yml up -d
+ 
+# 3. 동작 확인
+curl http://localhost:8000/health
+open http://localhost:5601   # Kibana
+```
+ 
+> **팀원 온보딩 요약**: `docker-compose.hub.yml` 파일 하나 전달 → `docker compose -f docker-compose.hub.yml up -d` 끝.
+> git도, Python도, Java도 로컬에 설치할 필요 없습니다.
+ 
+---
+ 
+### 방법 B — GitHub Clone (소스 코드 포함)
+ 
+소스 코드를 직접 보고 수정하면서 학습할 때 사용합니다.
+ 
 ```bash
 git clone https://github.com/username/docker-optimized-production.git
 cd docker-optimized-production
-
-# 전체 스택 기동 (FastAPI 이미지 빌드 포함)
+ 
+# FastAPI 이미지를 직접 빌드해서 실행
 docker compose up --build -d
-
-# 상태 확인
+```
+ 
+---
+ 
+### 실행 후 동작 확인 (공통)
+ 
+```bash
+# 서비스 상태
 docker compose ps
-
+ 
 # ES 클러스터 상태
 curl http://localhost:9200/_cluster/health?pretty
-
-# 데이터 색인 테스트
+ 
+# 데이터 색인
 curl -X POST http://localhost:8000/items \
   -H "Content-Type: application/json" \
   -d '{"title": "Docker 최적화", "description": "멀티 스테이지 빌드 가이드", "tag": "devops"}'
-
-# 검색 테스트
+ 
+# 검색
 curl "http://localhost:8000/items/search?q=Docker"
-
+ 
 # Kibana 접속
 open http://localhost:5601
 ```
-
+ 
 ---
 
 ## 🔧 핵심 파일 구조
