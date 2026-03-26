@@ -10,7 +10,8 @@
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![Image Size](https://img.shields.io/badge/FastAPI%20Image-145MB-success?style=flat-square)
 ![CVE](https://img.shields.io/badge/CVE-2%20(Low%20only)-brightgreen?style=flat-square)
-
+![Docker Hub](https://img.shields.io/badge/Docker%20Hub-juyeon%2Ffastapi--es-2496ED?style=flat-square&logo=docker&logoColor=white)
+ 
 **FastAPI + Elasticsearch + Kibana 풀 스택 Docker 최적화 가이드**
 
 이미지 크기 84% 감소 · 빌드 시간 78% 단축 · CVE 94% 제거
