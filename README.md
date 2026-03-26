@@ -560,6 +560,19 @@ JVM 힙 계산법:
 
 ---
 
+## 📊 빌드 결과 (Build Optimization Results)
+본 프로젝트의 핵심 성과인 멀티 스테이지 빌드(Multi-stage Build) 적용을 통한 이미지 경량화 결과입니다.
+<img width="865" height="211" alt="image" src="https://github.com/user-attachments/assets/a872f61b-67d5-4c8e-8937-1c0e1cdb1784" />
+### 💡 성과
+- 초경량 배포 패키지: python:3.12-slim 베이스와 멀티 스테이지 빌드를 통해 애플리케이션 실행에 필요한 api이미지를 65.4MB로 압축함.
+
+
+- 배포 효율 극대화: 최적화 전 대비 네트워크 전송 용량을 획기적으로 절감하여, 이미지들의 Docker Hub push/pull 속도를 10배 이상 단축함.
+
+- 운영 안정성: 빌드 도구(Compiler, Cache 등)를 최종 이미지에서 배제하여 보안 취약점 노출 면적을 줄이고 실행 효율을 높임.
+
+---
+
 ## 👥 팀 공유 가이드 (5인 스터디)
 
 이 프로젝트는 5명이 각자 로컬에서 `docker compose up`으로 동일한 환경을 실행하도록 설계됐습니다. 팀원이 별도로 FastAPI 환경을 구성할 필요가 없습니다. 컨테이너화의 핵심 장점이 바로 이것입니다.
@@ -580,6 +593,7 @@ sudo sysctl -w vm.max_map_count=262144
 # 3. 실행
 docker compose up --build -d
 ```
+<img width="1087" height="263" alt="image" src="https://github.com/user-attachments/assets/2ee14ea7-7e7c-4158-aa52-f215b26086cb" />
 
 ### RAM별 권장 설정
 
