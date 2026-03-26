@@ -34,15 +34,13 @@
 | **FastAPI** | 멀티 스테이지 빌드, slim 베이스, non-root 실행 | 우리가 직접 Dockerfile을 작성하므로 완전한 제어 가능 |
 | **Elasticsearch / Kibana** | JVM 튜닝, memory_lock, ulimits, healthcheck | Elastic사 완성 이미지 — 내부 수정 불가, 설정 주입만 가능 |
 
-> ES/Kibana를 경량화하지 않는 것은 실수가 아닙니다. Elastic사가 alpine 버전을 공식 지원하지 않으며, 비공식 경량화는 운영 장애 시 지원을 받을 수 없습니다. **"무엇을 최적화할 수 있고, 무엇은 할 수 없는지"를 구분하는 것이 시니어 엔지니어의 판단입니다.**
+> ES/Kibana는 경량화 할 수 없습니다.— Elastic사가 alpine 버전을 공식 지원하지 않으며, 비공식 경량화는 운영 장애 시 지원을 받을 수 없습니다.
 
 ---
 
-## 💡 이것만 알면 된다: 핵심 개념
+## 💡 프로젝트 내 핵심 개념
 
-### 이미지 vs 컨테이너
-
-많이 혼용되지만 완전히 다른 개념입니다.
+### 1. 이미지 vs 컨테이너
 
 ```
 이미지 (Image)
@@ -59,7 +57,7 @@ Dockerfile  →  docker build  →  이미지  →  docker run  →  컨테이�
   (설계도)                      (택배상자)                  (실행 중인 앱)
 ```
 
-### 왜 FastAPI가 필요한가
+### 2. 왜 FastAPI가 필요한가
 
 Elasticsearch는 검색 엔진이지 웹 서버가 아닙니다. 클라이언트가 ES에 직접 접근하면 인증이 없고, 비즈니스 로직을 넣을 수 없습니다. FastAPI는 그 중간 레이어입니다.
 
@@ -69,7 +67,7 @@ Elasticsearch는 검색 엔진이지 웹 서버가 아닙니다. 클라이언트
 
 FastAPI는 Python 프레임워크입니다. Python 인터프리터 위에서 실행되므로, Docker 이미지에 Python이 포함된 베이스 이미지(`python:3.12-slim`)가 필요합니다. Spring Boot 앱에 JVM이 필요한 것과 같은 원리입니다.
 
-### 왜 slim이고, 왜 alpine이 아닌가
+### 3. 왜 slim이고, 왜 alpine이 아닌가
 
 ```
 python:3.12        → Debian 풀세트 + 개발도구 + 폰트 + 문서 ... 920MB
@@ -81,7 +79,7 @@ python:3.12-alpine → 완전히 다른 OS (Alpine Linux, musl libc) ...  50MB
 
 **이 프로젝트에서 slim을 런타임에도 쓰는 이유**: FastAPI + elasticsearch 클라이언트는 C 확장 없는 순수 Python이라 alpine에서도 실행은 되지만, glibc 호환성 문제가 생길 수 있는 엣지케이스를 없애기 위해 slim을 선택했습니다.
 
-### 경량화 가능한 이미지 vs 불가능한 이미지
+### 4. 경량화 가능한 이미지 vs 불가능한 이미지
 
 직접 Dockerfile을 작성할 수 있으면 경량화 가능, 완성된 이미지를 가져다 쓰면 설정 튜닝만 가능합니다.
 
