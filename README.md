@@ -79,7 +79,33 @@ python:3.12-alpine → 완전히 다른 OS (Alpine Linux, musl libc) ...  50MB
 
 **이 프로젝트에서 slim을 런타임에도 쓰는 이유**: FastAPI + elasticsearch 클라이언트는 C 확장 없는 순수 Python이라 alpine에서도 실행은 되지만, glibc 호환성 문제가 생길 수 있는 엣지케이스를 없애기 위해 slim을 선택했습니다.
 
-### 4. 경량화 가능한 이미지 vs 불가능한 이미지
+### 4. slim에서 깔고, slim으로 옮기는 이유
+ 
+멀티 스테이지 빌드 중 -
+
+```
+Stage 1 (deps): python:3.12-slim
+  ├── gcc, musl-dev (컴파일러)     ← pip install 시 필요
+  ├── pip, setuptools (설치 도구)  ← pip install 시 필요
+  └── /install (설치 완료된 패키지) ← 이것만 필요
+ 
+                    COPY --from=deps /install 만 이사
+                              ↓
+Stage 2 (runtime): python:3.12-slim (새 이미지, 깨끗함)
+  ├── /install (복사해온 패키지)    ← O
+  ├── main.py (내 코드)            ← O
+  ├── gcc                          ← X (없음)
+  └── pip                          ← X (없음)
+```
+ 
+**핵심**: `COPY --from=deps /install`은 Stage 1 전체를 복사하는 게 아닙니다. `/install` 폴더, 즉 pip이 설치한 패키지 결과물만 가져옵니다. gcc와 pip은 Stage 1 안에만 존재하고, Stage 2에는 절대 들어오지 않습니다.
+ 
+**왜 Stage 2에서 그냥 다시 pip install 하지 않냐**: 그렇게 하면 Stage 2에도 pip이 들어가야 하고, 빌드 도구도 필요해집니다. 결국 이미지에 공사장비가 남게 됩니다. Stage 1에서 한 번 설치하고 결과물만 이사하는 것이 이미지를 작게 유지하는 이유입니다.
+ 
+**alpine으로 옮기는 경우**: C 확장이 없는 순수 Python 앱이라면 Stage 2를 `python:3.12-alpine`으로 바꿀 수 있습니다. slim(130MB) 대신 alpine(50MB)을 쓰면 런타임 이미지가 더 작아집니다. 단, `/install`에 glibc 기반 바이너리가 있으면 alpine(musl)에서 실행 오류가 납니다. 이 프로젝트는 안전하게 slim을 유지합니다.
+ 
+
+### 5. 경량화 가능한 이미지 vs 불가능한 이미지
 
 직접 Dockerfile을 작성할 수 있으면 경량화 가능, 완성된 이미지를 가져다 쓰면 설정 튜닝만 가능합니다.
 
